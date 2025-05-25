@@ -1,11 +1,11 @@
 # https://www.youtube.com/watch?v=zIyE-IHJTgM&ab_channel=TurtleCode
 
 import FreeSimpleGUI as sg
-from PIL import Image
 import io
 import os
 
 from Filtros import *
+from Histograma import *
 
 #Layout
 sg.theme('TanBlue')
@@ -35,7 +35,7 @@ layout = [
             [sg.Text("Filtros Disponíveis:", font=("Helvetica", 12))],
             [sg.Listbox(
                 values=filtros_disponiveis,
-                size=(15, 8),
+                size=(28, 13),
                 key="-LISTA_FILTROS-",
                 select_mode=sg.LISTBOX_SELECT_MODE_SINGLE,
                 enable_events=True,
@@ -94,7 +94,7 @@ while True:
             window["imagem"].update(data=image_bytes.getvalue())
 
     if event == "converter":
-        if not values["file_path"]:
+        if not values["file_path"] or image == None:
             sg.popup_error("Selecione imagem pfv")
             continue
 
@@ -111,6 +111,23 @@ while True:
             print(image_bytes.getvalue())
             window["resultado_imagem"].update(data=image_bytes.getvalue())
 
+        if filtro_selecionado == "Histograma":
+            # Verificar se a imagem já está em escala de cinza
+            # Se não estiver, converter para escala de cinza primeiro
+                if image.mode != 'L':
+                    imagem_cinza = filtro_cinza(image)
+                else:
+                    imagem_cinza = image
+                
+                # Gerar e exibir o histograma
+                gerar_histograma(imagem_cinza)
+                
+                # Opcional: Mostrar a imagem em escala de cinza na interface
+                imagem_cinza.thumbnail((400,400))
+                image_bytes = io.BytesIO()
+                imagem_cinza.save(image_bytes, format="PNG")
+                window["resultado_imagem"].update(data=image_bytes.getvalue())
+
         
-    
+
 window.close()
