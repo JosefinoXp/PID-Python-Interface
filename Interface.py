@@ -73,6 +73,8 @@ window = sg.Window('Aplicador de Filtros e Histograma', layout)
 filtro_selecionado = None
 image = None
 
+# Teste Zeh
+
 #Ler Eventos
 while True:
     event, values = window.read()
