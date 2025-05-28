@@ -1,3 +1,10 @@
+# git init
+# git remote add origin https://github.com/JosefinoXp/PID-Python-Interface.git
+# git branch checar se esta na branch certa
+# git add .
+# git commit -m "mensagem que vai colocar"
+# git push origin Part1 (BRANCH QUE VOCE VAI LANÇAR)
+
 # https://www.youtube.com/watch?v=zIyE-IHJTgM&ab_channel=TurtleCode
 
 import FreeSimpleGUI as sg
@@ -75,6 +82,7 @@ image = None
 
 # Teste Zeh
 
+#Incluir funcionalidades aplicadas aqui
 #Ler Eventos
 while True:
     event, values = window.read()
@@ -104,6 +112,8 @@ while True:
             sg.popup_error("Selecione filtro pfv")
             continue
 
+        # Modelo de função a ser replicada
+        # Apenas mudar nome da função em: imagem_convertida = filtro_cinza(image)
         if filtro_selecionado == "Escala de Cinza":
             imagem_convertida = filtro_cinza(image)
 

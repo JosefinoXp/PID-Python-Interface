@@ -1,4 +1,4 @@
-from PIL import Image
+from PIL import Image  
 
 def filtro_cinza(imagem):
     imagem = imagem.convert("RGB")
