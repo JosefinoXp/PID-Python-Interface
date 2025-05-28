@@ -16,7 +16,7 @@ filtros_disponiveis = [
     "Escala de Cinza", 
     "Passa-Alta Básico",
     "Passa-Alta Alto Reforço",
-    "Passa-Baixa Média (Básico)",
+    "Passa-Baixa Média",
     "Passa-Baixa Mediana",
     "Roberts",
     "Prewitt",
@@ -111,23 +111,50 @@ while True:
             print(image_bytes.getvalue())
             window["resultado_imagem"].update(data=image_bytes.getvalue())
 
+        if filtro_selecionado == "Passa-Baixa Média":
+            imagem_convertida = passa_baixa_media(image, 3)
+
+            imagem_convertida.thumbnail((400,400))
+            image_bytes = io.BytesIO()
+            imagem_convertida.save(image_bytes, format="PNG")
+            print(image_bytes.getvalue())
+            window["resultado_imagem"].update(data=image_bytes.getvalue())
+
+        if filtro_selecionado == "Passa-Baixa Mediana":
+            imagem_convertida = passa_baixa_mediana(image, 3)
+
+            imagem_convertida.thumbnail((400,400))
+            image_bytes = io.BytesIO()
+            imagem_convertida.save(image_bytes, format="PNG")
+            print(image_bytes.getvalue())
+            window["resultado_imagem"].update(data=image_bytes.getvalue())
+
         if filtro_selecionado == "Histograma":
             # Verificar se a imagem já está em escala de cinza
             # Se não estiver, converter para escala de cinza primeiro
-                if image.mode != 'L':
-                    imagem_cinza = filtro_cinza(image)
-                else:
-                    imagem_cinza = image
-                
-                # Gerar e exibir o histograma
-                gerar_histograma(imagem_cinza)
-                
-                # Opcional: Mostrar a imagem em escala de cinza na interface
-                imagem_cinza.thumbnail((400,400))
-                image_bytes = io.BytesIO()
-                imagem_cinza.save(image_bytes, format="PNG")
-                window["resultado_imagem"].update(data=image_bytes.getvalue())
+            if image.mode != 'L':
+                imagem_cinza = filtro_cinza(image)
+            else:
+                imagem_cinza = image
+            
+            # Gerar e exibir o histograma
+            gerar_histograma(imagem_cinza)
+            
+            # Opcional: Mostrar a imagem em escala de cinza na interface
+            imagem_cinza.thumbnail((400,400))
+            image_bytes = io.BytesIO()
+            imagem_cinza.save(image_bytes, format="PNG")
+            window["resultado_imagem"].update(data=image_bytes.getvalue())
 
+        if filtro_selecionado == "Equalização de Histograma":
+            # Aplicar equalização manual seguindo os 3 passos
+            imagem_equalizada = equalizar_histograma(image)
+            
+            # Exibir a imagem equalizada na interface
+            imagem_equalizada.thumbnail((400,400))
+            image_bytes = io.BytesIO()
+            imagem_equalizada.save(image_bytes, format="PNG")
+            window["resultado_imagem"].update(data=image_bytes.getvalue())
         
 
 window.close()

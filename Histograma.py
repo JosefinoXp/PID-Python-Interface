@@ -5,6 +5,10 @@ import cv2
 
 from Filtros import *
 
+#
+    # Histograma
+#
+
 def gerar_histograma(imagem_cinza):
     """
     Gera e exibe o histograma de uma imagem em escala de cinza.
@@ -35,9 +39,108 @@ def gerar_histograma(imagem_cinza):
     plt.grid(True, alpha=0.3)
     plt.show()
 
+
+#
+    # Equalização de Histograma
+#
+
+
+def calcular_histograma(imagem_array):
+    """
+    Passo 1: Calcula o histograma da imagem manualmente.
+    Conta a frequência de cada nível de intensidade (0-255).
+    
+    Parâmetros:
+    imagem_array (numpy.ndarray): Array da imagem em escala de cinza
+    
+    Retorna:
+    list: Lista com 256 elementos representando a frequência de cada intensidade
+    """
+    # Inicializar array de frequências para 256 níveis de cinza (0-255)
+    histograma = [0] * 256
+    
+    # Obter dimensões da imagem
+    altura, largura = imagem_array.shape
+    
+    # Contar frequência de cada intensidade pixel por pixel
+    for i in range(altura):
+        for j in range(largura):
+            intensidade = imagem_array[i, j]
+            histograma[intensidade] += 1
+    
+    return histograma
+
+def calcular_pdf(histograma, total_pixels):
+    """
+    Calcula a Função de Densidade de Probabilidade (PDF) do histograma.
+    PDF[i] = frequência[i] / total_pixels
+    
+    Parâmetros:
+    histograma (list): Lista com frequências de cada intensidade
+    total_pixels (int): Número total de pixels na imagem
+    
+    Retorna:
+    list: PDF normalizada (probabilidades somam 1)
+    """
+    pdf = []
+    for freq in histograma:
+        probabilidade = freq / total_pixels
+        pdf.append(probabilidade)
+    
+    return pdf
+
+def calcular_cdf(pdf):
+    """
+    Passo 2: Calcula a Função de Distribuição Acumulada (CDF) manualmente.
+    CDF[i] = soma de PDF[0] até PDF[i]
+    
+    Parâmetros:
+    pdf (list): Função de densidade de probabilidade
+    
+    Retorna:
+    list: CDF - soma acumulada das probabilidades
+    """
+    cdf = [0.0] * 256
+    cdf[0] = pdf[0]
+    
+    # Calcular soma acumulada das probabilidades
+    for i in range(1, 256):
+        cdf[i] = cdf[i-1] + pdf[i]
+    
+    return cdf
+
+def aplicar_transformacao(imagem_array, cdf):
+    """
+    Passo 3: Aplica a função de transformação usando a CDF.
+    Nova_intensidade = round(CDF[intensidade_original] * 255)
+    
+    Parâmetros:
+    imagem_array (numpy.ndarray): Array da imagem original
+    cdf (list): Função de distribuição acumulada
+    
+    Retorna:
+    numpy.ndarray: Imagem com histograma equalizado
+    """
+    altura, largura = imagem_array.shape
+    imagem_equalizada = np.zeros_like(imagem_array)
+    
+    # Aplicar transformação pixel por pixel
+    for i in range(altura):
+        for j in range(largura):
+            intensidade_original = imagem_array[i, j]
+            # Mapear usando CDF: nova_intensidade = round(CDF * (L-1))
+            # onde L = 256 (número de níveis de cinza)
+            nova_intensidade = round(cdf[intensidade_original] * 255)
+            imagem_equalizada[i, j] = nova_intensidade
+    
+    return imagem_equalizada
+
 def equalizar_histograma(imagem_pil):
     """
-    Aplica equalização de histograma em uma imagem PIL.
+    Implementação completa de equalização de histograma seguindo os 3 passos:
+    1. Calcular histograma da imagem
+    2. Computar a Função de Distribuição Acumulada (CDF)
+    3. Aplicar função de transformação
     
     Parâmetros:
     imagem_pil (PIL.Image): Imagem PIL original
@@ -45,111 +148,34 @@ def equalizar_histograma(imagem_pil):
     Retorna:
     PIL.Image: Imagem com histograma equalizado
     """
-    # Converter PIL para OpenCV (numpy array)
-    img_array = np.array(imagem_pil)
-    
-    # Se a imagem for colorida, converter para escala de cinza
-    if len(img_array.shape) == 3:
-        # Converter para escala de cinza usando OpenCV
-        img_gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+    # Converter para escala de cinza se necessário
+    if imagem_pil.mode != 'L':
+        imagem_cinza = imagem_pil.convert('L')
     else:
-        img_gray = img_array
+        imagem_cinza = imagem_pil
     
-    # Aplicar equalização de histograma usando OpenCV
-    img_equalizada = cv2.equalizeHist(img_gray)
+    # Converter PIL para array numpy
+    imagem_array = np.array(imagem_cinza)
+    altura, largura = imagem_array.shape
+    total_pixels = altura * largura
+    
+    # PASSO 1: Calcular histograma da imagem
+    # print("Passo 1: Calculando histograma...")
+    histograma = calcular_histograma(imagem_array)
+    
+    # Calcular PDF (Função de Densidade de Probabilidade)
+    # print("Calculando PDF...")
+    pdf = calcular_pdf(histograma, total_pixels)
+    
+    # PASSO 2: Computar a Função de Distribuição Acumulada (CDF)
+    # print("Passo 2: Calculando CDF...")
+    cdf = calcular_cdf(pdf)
+    
+    # PASSO 3: Aplicar função de transformação
+    # print("Passo 3: Aplicando transformação...")
+    imagem_equalizada = aplicar_transformacao(imagem_array, cdf)
     
     # Converter de volta para PIL Image
-    imagem_equalizada_pil = Image.fromarray(img_equalizada, mode='L')
+    imagem_equalizada_pil = Image.fromarray(imagem_equalizada.astype(np.uint8), mode='L')
     
     return imagem_equalizada_pil
-
-def equalizar_histograma_colorida(imagem_pil):
-    """
-    Aplica equalização de histograma em imagem colorida preservando as cores.
-    Utiliza o espaço de cores HSV, equalizando apenas o canal V (Value/Brilho).
-    
-    Parâmetros:
-    imagem_pil (PIL.Image): Imagem PIL colorida
-    
-    Retorna:
-    PIL.Image: Imagem colorida com histograma equalizado
-    """
-    # Converter PIL para array numpy
-    img_array = np.array(imagem_pil)
-    
-    # Converter RGB para HSV
-    img_hsv = cv2.cvtColor(img_array, cv2.COLOR_RGB2HSV)
-    
-    # Separar os canais HSV
-    h, s, v = cv2.split(img_hsv)
-    
-    # Equalizar apenas o canal V (brilho/intensidade)
-    v_equalizado = cv2.equalizeHist(v)
-    
-    # Recombinar os canais HSV
-    img_hsv_equalizada = cv2.merge([h, s, v_equalizado])
-    
-    # Converter de volta para RGB
-    img_rgb_equalizada = cv2.cvtColor(img_hsv_equalizada, cv2.COLOR_HSV2RGB)
-    
-    # Converter para PIL Image
-    imagem_equalizada_pil = Image.fromarray(img_rgb_equalizada)
-    
-    return imagem_equalizada_pil
-
-def comparar_histogramas(imagem_original, imagem_equalizada):
-    """
-    Exibe uma comparação lado a lado dos histogramas antes e depois da equalização.
-    
-    Parâmetros:
-    imagem_original (PIL.Image): Imagem original
-    imagem_equalizada (PIL.Image): Imagem com histograma equalizado
-    """
-    # Converter para arrays numpy
-    img_orig = np.array(imagem_original)
-    img_eq = np.array(imagem_equalizada)
-    
-    # Se as imagens forem coloridas, converter para escala de cinza
-    if len(img_orig.shape) == 3:
-        img_orig = cv2.cvtColor(img_orig, cv2.COLOR_RGB2GRAY)
-    if len(img_eq.shape) == 3:
-        img_eq = cv2.cvtColor(img_eq, cv2.COLOR_RGB2GRAY)
-    
-    # Calcular histogramas
-    hist_orig = cv2.calcHist([img_orig], [0], None, [256], [0,256])
-    hist_eq = cv2.calcHist([img_eq], [0], None, [256], [0,256])
-    
-    # Plotar comparação
-    plt.figure(figsize=(15,5))
-    
-    # Histograma original
-    plt.subplot(1,3,1)
-    plt.title('Histograma Original')
-    plt.xlabel('Intensidade')
-    plt.ylabel('Número de Pixels')
-    plt.plot(hist_orig, color='blue')
-    plt.xlim([0,256])
-    plt.grid(True, alpha=0.3)
-    
-    # Histograma equalizado
-    plt.subplot(1,3,2)
-    plt.title('Histograma Equalizado')
-    plt.xlabel('Intensidade')
-    plt.ylabel('Número de Pixels')
-    plt.plot(hist_eq, color='red')
-    plt.xlim([0,256])
-    plt.grid(True, alpha=0.3)
-    
-    # Comparação sobreposta
-    plt.subplot(1,3,3)
-    plt.title('Comparação Sobreposta')
-    plt.xlabel('Intensidade')
-    plt.ylabel('Número de Pixels')
-    plt.plot(hist_orig, color='blue', alpha=0.7, label='Original')
-    plt.plot(hist_eq, color='red', alpha=0.7, label='Equalizado')
-    plt.xlim([0,256])
-    plt.legend()
-    plt.grid(True, alpha=0.3)
-    
-    plt.tight_layout()
-    plt.show()
