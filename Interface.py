@@ -108,7 +108,16 @@ def atualizar_parametros_visiveis(filtro):
 
 
 #Janela
-window = sg.Window('Aplicador de Filtros e Histograma', layout)
+window = sg.Window(
+    'Aplicador de Filtros e Histograma',
+    layout,
+    finalize=True,
+    resizable=True,
+    size=(1000, 700),
+    element_justification='center'
+)
+window.maximize()
+
 
 #Declaração de variavel
 filtro_selecionado = None
@@ -216,6 +225,14 @@ while True:
             image_bytes = io.BytesIO()
             imagem_convertida.save(image_bytes, format="PNG")
             print(image_bytes.getvalue())
+            window["resultado_imagem"].update(data=image_bytes.getvalue())
+
+        if filtro_selecionado == "Prewitt":
+            imagem_convertida = filtro_prewitt(image)
+
+            imagem_convertida.thumbnail((400, 400))
+            image_bytes = io.BytesIO()
+            imagem_convertida.save(image_bytes, format="PNG")
             window["resultado_imagem"].update(data=image_bytes.getvalue())
 
         if filtro_selecionado == "Histograma":

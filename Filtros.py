@@ -1,9 +1,29 @@
 from PIL import Image  
 
 import numpy as np
+import math
 
-#incluir doc
+# 1
 def limiarizacao(imagem, limiar):
+    """
+    Aplica a limiarização binária a uma imagem em escala de cinza.
+    
+    Cada pixel é comparado com um valor de limiar. Se o valor do pixel for
+    maior ou igual ao limiar, ele é definido como 255 (branco); caso contrário,
+    é definido como 0 (preto).
+    
+    Parâmetros:
+    -----------
+    imagem : PIL.Image
+        Imagem de entrada (será convertida para escala de cinza).
+    limiar : int
+        Valor de limiar (entre 0 e 255).
+    
+    Retorna:
+    --------
+    PIL.Image
+        Imagem binarizada (preto e branco).
+    """
     # Garante que a imagem está em modo de escala de cinza
     imagem = imagem.convert("L")
 
@@ -19,8 +39,24 @@ def limiarizacao(imagem, limiar):
 
     return img_binaria
 
-#incluir doc
+# 2
 def filtro_cinza(imagem):
+    """
+    Converte uma imagem RGB para escala de cinza utilizando média ponderada.
+    
+    A conversão é feita utilizando a fórmula:
+    0.299 * R + 0.587 * G + 0.114 * B, que considera a sensibilidade do olho humano.
+    
+    Parâmetros:
+    -----------
+    imagem : PIL.Image
+        Imagem de entrada (em RGB).
+    
+    Retorna:
+    --------
+    PIL.Image
+        Imagem convertida para tons de cinza.
+    """
     imagem = imagem.convert("RGB")
     pixels = list(imagem.getdata())
 
@@ -34,6 +70,15 @@ def filtro_cinza(imagem):
     img_gray.putdata(grayscale_pixels)
     return img_gray
 
+# 3
+def passa_alta_basico():
+    pass
+
+# 4 
+def passa_alta_alto_reforco():
+    pass
+
+# 5
 def passa_baixa_media(imagem, tamanho_kernel):
     """
     Aplica um filtro passa-baixa usando média aritmética (implementação manual).
@@ -122,6 +167,7 @@ def passa_baixa_media(imagem, tamanho_kernel):
     img_saida = np.clip(img_saida, 0, 255).astype(np.uint8)
     return Image.fromarray(img_saida)
 
+# 6
 def passa_baixa_mediana(imagem, tamanho_kernel):
     """
     Aplica um filtro passa-baixa usando mediana (implementação manual).
@@ -218,8 +264,25 @@ def passa_baixa_mediana(imagem, tamanho_kernel):
     # Retorna como PIL Image
     return Image.fromarray(img_saida)
 
-#incluir doc
+# 7
 def filtro_roberts(imagem):
+    """
+    Aplica o operador de detecção de bordas de Roberts em uma imagem.
+    
+    O operador calcula as diferenças diagonais entre pixels vizinhos para
+    detectar bordas. A magnitude do gradiente é aproximada por somar os valores
+    absolutos das derivadas nas direções x e y.
+    
+    Parâmetros:
+    -----------
+    imagem : PIL.Image
+        Imagem de entrada (será convertida para tons de cinza).
+    
+    Retorna:
+    --------
+    PIL.Image
+        Imagem com bordas detectadas usando o operador de Roberts.
+    """
     imagem = imagem.convert("L")  # Garantir escala de cinza
     largura, altura = imagem.size
     pixels = imagem.load()
@@ -243,6 +306,77 @@ def filtro_roberts(imagem):
             novo_pixels[x, y] = magnitude
 
     return nova_img
-    
-    # Retorna como PIL Image
-    return Image.fromarray(img_saida)
+
+# 8
+def filtro_prewitt(imagem):
+    """
+    Aplica o filtro de Prewitt para detecção de bordas em uma imagem em escala de cinza.
+
+    O filtro de Prewitt usa dois kernels fixos (Gx e Gy) para detectar bordas
+    horizontais e verticais. A magnitude do gradiente é calculada para realçar
+    os contornos da imagem.
+
+    Parâmetros:
+    -----------
+    imagem : PIL.Image
+        Imagem de entrada (será convertida para escala de cinza se necessário).
+
+    Retorna:
+    --------
+    PIL.Image
+        Imagem resultante com bordas realçadas (em escala de cinza).
+    """
+    # Garante que a imagem está em modo de escala de cinza
+    imagem = imagem.convert("L")
+    largura, altura = imagem.size
+    pixels = imagem.load()
+
+    # Define os kernels Gx e Gy
+    Gx = [[-1, 0, 1],
+          [-1, 0, 1],
+          [-1, 0, 1]]
+
+    Gy = [[ 1,  1,  1],
+          [ 0,  0,  0],
+          [-1, -1, -1]]
+
+    # Cria nova imagem de saída
+    nova_img = Image.new("L", (largura, altura))
+    novo_pixels = nova_img.load()
+
+    # Aplica convolução (ignorando bordas)
+    for y in range(1, altura - 1):
+        for x in range(1, largura - 1):
+            soma_x = 0
+            soma_y = 0
+
+            # Aplica os kernels na vizinhança 3x3
+            for i in range(3):
+                for j in range(3):
+                    px = pixels[x + j - 1, y + i - 1]
+                    soma_x += Gx[i][j] * px
+                    soma_y += Gy[i][j] * px
+
+            # Calcula a magnitude do gradiente
+            magnitude = math.sqrt(soma_x**2 + soma_y**2)
+            magnitude = min(255, int(magnitude))
+
+            novo_pixels[x, y] = magnitude
+
+    return nova_img
+
+# 9
+def filtro_sobel():
+    pass
+
+# 10
+def transformacao_logaritmica():
+    pass
+
+# 11
+def operacoes_aritmeticas():
+    pass
+
+# 12
+def filtro_ruidos():
+    pass

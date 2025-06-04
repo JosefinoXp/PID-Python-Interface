@@ -9,6 +9,7 @@ from Filtros import *
     # Histograma
 #
 
+# 13
 def gerar_histograma(imagem_cinza):
     """
     Gera e exibe o histograma de uma imagem em escala de cinza.
@@ -135,6 +136,7 @@ def aplicar_transformacao(imagem_array, cdf):
     
     return imagem_equalizada
 
+# 14
 def equalizar_histograma(imagem_pil):
     """
     Implementação completa de equalização de histograma seguindo os 3 passos:
