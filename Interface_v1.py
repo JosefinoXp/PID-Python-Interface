@@ -19,7 +19,7 @@ sg.theme('TanBlue')
 
 # Lista de filtros disponíveis
 filtros_disponiveis = [
-    "Limiriazação",
+    "Limiriazação (Threshold)",
     "Escala de Cinza", 
     "Passa-Alta Básico",
     "Passa-Alta Alto Reforço",
@@ -33,23 +33,6 @@ filtros_disponiveis = [
     "Histograma",
     "Equalização de Histograma"
 ]
-
-# Define quais parâmetros cada filtro precisa
-filtros_parametros = {
-    "Limiriazação": ["limiar"],
-    "Passa-Baixa Média": ["kernel"],
-    "Passa-Baixa Mediana": ["kernel"],
-}
-
-# Layout dos parâmetros dinâmicos
-layout_parametros = [
-    [sg.Text("Limiar (0-255):", font=("Helvetica", 10), visible=False, key="-TEXT_LIMIAR-"),
-     sg.InputText("150", size=(5,1), key="-VALOR_LIMIAR-", visible=False)],
-
-    [sg.Text("Tamanho do Kernel (ímpar ≥3):", font=("Helvetica", 10), visible=False, key="-TEXT_KERNEL-"),
-     sg.InputText("3", size=(5,1), key="-VALOR_KERNEL-", visible=False)],
-]
-
 
 # Layout com os elementos organizados em uma coluna
 layout = [
@@ -67,8 +50,8 @@ layout = [
                 background_color="white"
             )],
             [sg.Text("Filtro Selecionado:", font=("Helvetica", 10))],
-            [sg.Text("Nenhum", key="-FILTRO_ATUAL-", font=("Helvetica", 10), text_color="blue")],
-        ] + layout_parametros, element_justification='left', vertical_alignment='top'),
+            [sg.Text("Nenhum", key="-FILTRO_ATUAL-", font=("Helvetica", 10), text_color="blue")]
+        ], element_justification='left', vertical_alignment='top'),
         
         # Coluna direita (imagens e botões)
         sg.Column([
@@ -88,23 +71,6 @@ layout = [
         sg.Button("Carregar Imagem")
     ],
 ]
-
-def atualizar_parametros_visiveis(filtro):
-    # Oculta tudo por padrão
-    window["-TEXT_LIMIAR-"].update(visible=False)
-    window["-VALOR_LIMIAR-"].update(visible=False)
-
-    window["-TEXT_KERNEL-"].update(visible=False)
-    window["-VALOR_KERNEL-"].update(visible=False)
-
-    # Ativa conforme o necessário
-    parametros = filtros_parametros.get(filtro, [])
-    if "limiar" in parametros:
-        window["-TEXT_LIMIAR-"].update(visible=True)
-        window["-VALOR_LIMIAR-"].update(visible=True)
-    if "kernel" in parametros:
-        window["-TEXT_KERNEL-"].update(visible=True)
-        window["-VALOR_KERNEL-"].update(visible=True)
 
 
 #Janela
@@ -126,9 +92,6 @@ while True:
     if event == "-LISTA_FILTROS-" and values["-LISTA_FILTROS-"]:
         filtro_selecionado = values["-LISTA_FILTROS-"][0]
         window["-FILTRO_ATUAL-"].update(filtro_selecionado)
-        if filtro_selecionado:
-            window["-FILTRO_ATUAL-"].update(filtro_selecionado)
-            atualizar_parametros_visiveis(filtro_selecionado)
 
     if event == "Carregar Imagem":
         filename = values["file_path"]
@@ -142,23 +105,15 @@ while True:
 
     if event == "converter":
         if not values["file_path"] or image == None:
-            sg.popup_error("Selecione uma imagem.")
+            sg.popup_error("Selecione imagem pfv")
             continue
 
         if not filtro_selecionado:
-            sg.popup_error("Selecione um filtro.")
+            sg.popup_error("Selecione filtro pfv")
             continue
 
-        if filtro_selecionado == "Limiriazação":
-            try:
-                limiar_usuario = int(values["-VALOR_LIMIAR-"])
-                if not (0 <= limiar_usuario <= 255):
-                    raise ValueError
-            except:
-                sg.popup_error("Digite um valor de limiar entre 0 e 255.")
-                continue
-
-            imagem_convertida = limiarizacao(image, limiar=limiar_usuario)
+        if filtro_selecionado == "Limiriazação (Threshold)":
+            imagem_convertida = limiarizacao(image, limiar=150)
 
             imagem_convertida.thumbnail((400, 400))
             image_bytes = io.BytesIO()
@@ -176,15 +131,7 @@ while True:
             window["resultado_imagem"].update(data=image_bytes.getvalue())
 
         if filtro_selecionado == "Passa-Baixa Média":
-            try:
-                kernel_usuario = int(values["-VALOR_KERNEL-"])
-                if kernel_usuario % 2 == 0 or kernel_usuario < 3:
-                    raise ValueError
-            except:
-                sg.popup_error("Digite um valor de kernel ímpar e ≥ 3.")
-                continue
-
-            imagem_convertida = passa_baixa_media(image, kernel_usuario)
+            imagem_convertida = passa_baixa_media(image, 3)
 
             imagem_convertida.thumbnail((400,400))
             image_bytes = io.BytesIO()
@@ -193,15 +140,7 @@ while True:
             window["resultado_imagem"].update(data=image_bytes.getvalue())
 
         if filtro_selecionado == "Passa-Baixa Mediana":
-            try:
-                kernel_usuario = int(values["-VALOR_KERNEL-"])
-                if kernel_usuario % 2 == 0 or kernel_usuario < 3:
-                    raise ValueError
-            except:
-                sg.popup_error("Digite um valor de kernel ímpar e ≥ 3.")
-                continue
-
-            imagem_convertida = passa_baixa_mediana(image, kernel_usuario)
+            imagem_convertida = passa_baixa_mediana(image, 3)
 
             imagem_convertida.thumbnail((400,400))
             image_bytes = io.BytesIO()

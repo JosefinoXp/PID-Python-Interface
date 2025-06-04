@@ -2,6 +2,24 @@ from PIL import Image
 
 import numpy as np
 
+#incluir doc
+def limiarizacao(imagem, limiar):
+    # Garante que a imagem está em modo de escala de cinza
+    imagem = imagem.convert("L")
+
+    # Obtém os pixels
+    pixels = list(imagem.getdata())
+
+    # Aplica o limiar: 255 se >= limiar, senão 0
+    binarizada = [255 if px >= limiar else 0 for px in pixels]
+
+    # Cria nova imagem binária
+    img_binaria = Image.new("L", imagem.size)
+    img_binaria.putdata(binarizada)
+
+    return img_binaria
+
+#incluir doc
 def filtro_cinza(imagem):
     imagem = imagem.convert("RGB")
     pixels = list(imagem.getdata())
@@ -16,7 +34,7 @@ def filtro_cinza(imagem):
     img_gray.putdata(grayscale_pixels)
     return img_gray
 
-def passa_baixa_media(imagem, tamanho_kernel=3):
+def passa_baixa_media(imagem, tamanho_kernel):
     """
     Aplica um filtro passa-baixa usando média aritmética (implementação manual).
     
@@ -104,7 +122,7 @@ def passa_baixa_media(imagem, tamanho_kernel=3):
     img_saida = np.clip(img_saida, 0, 255).astype(np.uint8)
     return Image.fromarray(img_saida)
 
-def passa_baixa_mediana(imagem, tamanho_kernel=3):
+def passa_baixa_mediana(imagem, tamanho_kernel):
     """
     Aplica um filtro passa-baixa usando mediana (implementação manual).
     
@@ -196,6 +214,35 @@ def passa_baixa_mediana(imagem, tamanho_kernel=3):
                 # Encontra a mediana
                 mediana_idx = len(valores) // 2
                 img_saida[x, y] = valores[mediana_idx]
+
+    # Retorna como PIL Image
+    return Image.fromarray(img_saida)
+
+#incluir doc
+def filtro_roberts(imagem):
+    imagem = imagem.convert("L")  # Garantir escala de cinza
+    largura, altura = imagem.size
+    pixels = imagem.load()
+
+    nova_img = Image.new("L", (largura, altura))
+    novo_pixels = nova_img.load()
+
+    for y in range(altura - 1):
+        for x in range(largura - 1):
+            p = pixels[x, y]
+            px1 = pixels[x+1, y]
+            px2 = pixels[x, y+1]
+            px3 = pixels[x+1, y+1]
+
+            Gx = int(p - px3)
+            Gy = int(px1 - px2)
+
+            # Magnitude do gradiente (versão mais rápida: valor absoluto)
+            magnitude = min(255, abs(Gx) + abs(Gy))
+
+            novo_pixels[x, y] = magnitude
+
+    return nova_img
     
     # Retorna como PIL Image
     return Image.fromarray(img_saida)
