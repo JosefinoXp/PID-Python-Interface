@@ -28,7 +28,8 @@ filtros_disponiveis = [
     "Roberts",
     "Prewitt",
     "Sobel",
-    "Log",
+    "Transformação Logarítmica",
+    "Operações Aritméticas",
     "Ruídos",
     "Histograma",
     "Equalização de Histograma"
@@ -39,6 +40,7 @@ filtros_parametros = {
     "Limiriazação": ["limiar"],
     "Passa-Baixa Média": ["kernel"],
     "Passa-Baixa Mediana": ["kernel"],
+    "Operações Aritméticas": ["operacao", "segunda_imagem", "escalar"]
 }
 
 # Layout dos parâmetros dinâmicos
@@ -48,13 +50,115 @@ layout_parametros = [
 
     [sg.Text("Tamanho do Kernel (ímpar ≥3):", font=("Helvetica", 10), visible=False, key="-TEXT_KERNEL-"),
      sg.InputText("3", size=(5,1), key="-VALOR_KERNEL-", visible=False)],
+
+    [sg.Text("Operação:", visible=False, key="-TEXT_OPERACAO-"),
+     sg.Combo(["soma", "subtracao", "multiplicacao"], key="-OPERACAO_ARITMETICA-", visible=False)],
+
+    [sg.Text("Valor Escalar:", visible=False, key="-TEXT_ESCALAR-"),
+     sg.InputText("1.0", size=(5,1), key="-VALOR_ESCALAR-", visible=False)],
+
+    [sg.Text("Segunda Imagem:", visible=False, key="-TEXT_SEGUNDA_IMAGEM-")],
+    [sg.InputText(key="-SEGUNDA_IMAGEM-", size=(25,1), visible=False, enable_events=False),
+     sg.FileBrowse("Browse", key="-BROWSE_SEGUNDA_IMAGEM-", visible=False)],
+
+    [sg.Button("Carregar Segunda Imagem", key="-CARREGAR_SEGUNDA-", visible=False)],
+
+    [sg.Image(key="segunda_imagem", visible=False)]
 ]
 
+# Layout dos parâmetros dinâmicos dentro de uma coluna
+parametros_coluna = sg.Column(
+    layout_parametros,
+    key="-COLUNA_PARAMETROS-",
+    vertical_alignment='top',
+    expand_x=True,
+    expand_y=True,
+    scrollable=False
+)
 
-# Layout com os elementos organizados em uma coluna
-layout = [
-    [   # Primeira linha do layout principal
-        # Coluna esquerda (filtros)
+# coluna_imagens = sg.Column(
+#     [
+#         [sg.Text("IMAGEM ORIGINAL", font=("Helvetica", 12))],
+#         [sg.Image(key="imagem")],
+#         [sg.Button("CONVERTER", key="converter")],
+#         [sg.Text("IMAGEM CONVERTIDA", font=("Helvetica", 12))],
+#         [sg.Image(key="resultado_imagem")],
+#     ],
+#     size=(450, 600),          # altura fixa para limitar a área
+#     vertical_scroll_only=True,
+#     scrollable=False
+# )
+
+coluna_imagens = sg.Column(
+    [
+        [
+            sg.Column([
+                [sg.Text("IMAGEM ORIGINAL", font=("Helvetica", 12), justification="center")],
+                [sg.Image(key="imagem")],
+            ], element_justification='center', vertical_alignment='top', pad=(10, 10)),
+
+            sg.VerticalSeparator(pad=(10, 0)),
+
+            sg.Column([
+                [sg.Text("IMAGEM CONVERTIDA", font=("Helvetica", 12), justification="center")],
+                [sg.Image(key="resultado_imagem")],
+            ], element_justification='center', vertical_alignment='top', pad=(10, 10)),
+        ],
+        [sg.Button("CONVERTER", key="converter")],
+
+        # Segunda linha: seleção de imagem
+        [
+            sg.Text("Imagem"),
+            sg.Input(size=(30, 1), key="file_path"),
+            sg.FileBrowse(),
+            sg.Button("Carregar Imagem")
+        ],
+    ],
+    expand_x=True,
+    justification="center",
+    key="-COL_IMAGENS-",
+    vertical_alignment='top'
+)
+
+
+# # Layout com os elementos organizados em uma coluna
+# layout = [
+#     [   # Primeira linha do layout principal
+#         # Coluna esquerda (filtros)
+#         # Layout principal com coluna de filtros + parâmetros dinâmicos
+#     sg.Column([
+#             [sg.Text("Filtros Disponíveis:", font=("Helvetica", 12))],
+#             [sg.Listbox(
+#                 values=filtros_disponiveis,
+#                 size=(28, 13),
+#                 key="-LISTA_FILTROS-",
+#                 select_mode=sg.LISTBOX_SELECT_MODE_SINGLE,
+#                 enable_events=True,
+#                 font=("Helvetica", 10),
+#                 background_color="white"
+#             )],
+#             [sg.Text("Filtro Selecionado:", font=("Helvetica", 10))],
+#             [sg.Text("Nenhum", key="-FILTRO_ATUAL-", font=("Helvetica", 10), text_color="blue")],
+#             [parametros_coluna]  # ← Aqui entra a nova coluna de parâmetros
+#         ], element_justification='left', vertical_alignment='top'),
+
+#         # Coluna direita (imagens e botões)
+#         coluna_imagens,
+#     ],
+    
+#     # Segunda linha do layout principal (controles de arquivo)
+#     [
+#         sg.Text("Imagem"),
+#         sg.Input(size=(30,1),key="file_path"),
+#         sg.FileBrowse(), 
+#         sg.Button("Carregar Imagem")
+#     ],
+# ]
+
+# Agrupa todos os elementos em uma coluna scrollável
+conteudo_completo = [
+    [
+        # Coluna da esquerda: lista de filtros e parâmetros
         sg.Column([
             [sg.Text("Filtros Disponíveis:", font=("Helvetica", 12))],
             [sg.Listbox(
@@ -68,36 +172,34 @@ layout = [
             )],
             [sg.Text("Filtro Selecionado:", font=("Helvetica", 10))],
             [sg.Text("Nenhum", key="-FILTRO_ATUAL-", font=("Helvetica", 10), text_color="blue")],
-        ] + layout_parametros, element_justification='left', vertical_alignment='top'),
-        
-        # Coluna direita (imagens e botões)
-        sg.Column([
-            [sg.Text("IMAGEM ORIGINAL", font=("Helvetica", 12))],
-            [sg.Image(key="imagem")],                           # Imagem original
-            [sg.Button("CONVERTER", key="converter")],          # Botão converter  
-            [sg.Text("IMAGEM CONVERTIDA", font=("Helvetica", 12))],
-            [sg.Image(key="resultado_imagem")],                 # Imagem transformada
-        ], element_justification='center')
-    ],
-    
-    # Segunda linha do layout principal (controles de arquivo)
-    [
-        sg.Text("Imagem"),
-        sg.Input(size=(30,1),key="file_path"),
-        sg.FileBrowse(), 
-        sg.Button("Carregar Imagem")
+            [parametros_coluna]
+        ], vertical_alignment='top', element_justification='left', size=(300, 1000)), 
+
+        # Coluna direita: imagens lado a lado
+        coluna_imagens,
     ],
 ]
 
+# Layout principal com rolagem total
+layout = [
+    [sg.Column(
+        conteudo_completo,
+        scrollable=False,
+        size=(3000, 3000),
+        key="-SCROLL_AREA-"
+    )]
+]
+
+
 def atualizar_parametros_visiveis(filtro):
-    # Oculta tudo por padrão
-    window["-TEXT_LIMIAR-"].update(visible=False)
-    window["-VALOR_LIMIAR-"].update(visible=False)
+    # Oculta todos
+    for key in ["-TEXT_LIMIAR-", "-VALOR_LIMIAR-",
+                "-TEXT_KERNEL-", "-VALOR_KERNEL-",
+                "-TEXT_OPERACAO-", "-OPERACAO_ARITMETICA-",
+                "-TEXT_SEGUNDA_IMAGEM-", "-SEGUNDA_IMAGEM-", "-BROWSE_SEGUNDA_IMAGEM-",
+                "-TEXT_ESCALAR-", "-VALOR_ESCALAR-", "-CARREGAR_SEGUNDA-", "segunda_imagem"]:
+        window[key].update(visible=False)
 
-    window["-TEXT_KERNEL-"].update(visible=False)
-    window["-VALOR_KERNEL-"].update(visible=False)
-
-    # Ativa conforme o necessário
     parametros = filtros_parametros.get(filtro, [])
     if "limiar" in parametros:
         window["-TEXT_LIMIAR-"].update(visible=True)
@@ -105,27 +207,40 @@ def atualizar_parametros_visiveis(filtro):
     if "kernel" in parametros:
         window["-TEXT_KERNEL-"].update(visible=True)
         window["-VALOR_KERNEL-"].update(visible=True)
+    if "operacao" in parametros:
+        window["-TEXT_OPERACAO-"].update(visible=True)
+        window["-OPERACAO_ARITMETICA-"].update(visible=True)
+    if "segunda_imagem" in parametros:
+        window["-TEXT_SEGUNDA_IMAGEM-"].update(visible=True)
+        window["-SEGUNDA_IMAGEM-"].update(visible=True)
+        window["-CARREGAR_SEGUNDA-"].update(visible=True)
+        window["segunda_imagem"].update(visible=True)
+        window["-BROWSE_SEGUNDA_IMAGEM-"].update(visible=True)
+    if "escalar" in parametros:
+        window["-TEXT_ESCALAR-"].update(visible=True)
+        window["-VALOR_ESCALAR-"].update(visible=True)
 
 
-#Janela
+# Janela
 window = sg.Window(
     'Aplicador de Filtros e Histograma',
     layout,
     finalize=True,
     resizable=True,
     size=(1000, 700),
-    element_justification='center'
+    element_justification='center',
+    use_default_focus=False
 )
 window.maximize()
+
 
 
 #Declaração de variavel
 filtro_selecionado = None
 image = None
+segunda_image = None
 
-# Teste Zeh
 
-#Incluir funcionalidades aplicadas aqui
 #Ler Eventos
 while True:
     event, values = window.read()
@@ -148,6 +263,18 @@ while True:
             image.save(image_bytes, format="PNG")
             print(image_bytes.getvalue())
             window["imagem"].update(data=image_bytes.getvalue())
+    
+    if event == "-CARREGAR_SEGUNDA-":
+        caminho_segunda = values["-SEGUNDA_IMAGEM-"]
+        if os.path.exists(caminho_segunda):
+            segunda_image = Image.open(caminho_segunda)
+            segunda_image.thumbnail((400, 400))
+            image_bytes = io.BytesIO()
+            segunda_image.save(image_bytes, format="PNG")
+            window["segunda_imagem"].update(data=image_bytes.getvalue(), visible=True)
+        else:
+            sg.popup_error("Arquivo da segunda imagem não encontrado.")
+
 
     if event == "converter":
         if not values["file_path"] or image == None:
@@ -234,6 +361,58 @@ while True:
             image_bytes = io.BytesIO()
             imagem_convertida.save(image_bytes, format="PNG")
             window["resultado_imagem"].update(data=image_bytes.getvalue())
+
+        if filtro_selecionado == "Operações Aritméticas":
+            caminho_img2 = values["-SEGUNDA_IMAGEM-"]
+            operacao = values["-OPERACAO_ARITMETICA-"]
+            try:
+                escalar = float(values["-VALOR_ESCALAR-"])
+            except:
+                sg.popup_error("Digite um valor numérico válido para o escalar.")
+                continue
+
+            if not caminho_img2 or not os.path.exists(caminho_img2):
+                sg.popup_error("Selecione uma segunda imagem válida.")
+                continue
+
+            try:
+                imagem2 = Image.open(caminho_img2)
+
+                # Mostrar a segunda imagem na interface
+                imagem2_thumbnail = imagem2.copy()
+                imagem2_thumbnail.thumbnail((400, 400))
+                img2_bytes = io.BytesIO()
+                imagem2_thumbnail.save(img2_bytes, format="PNG")
+                window["segunda_imagem"].update(data=img2_bytes.getvalue(), visible=True)
+
+                # Preparar as imagens para operação
+                image1 = image.convert("RGB")
+                imagem2 = imagem2.convert("RGB").resize(image1.size)
+
+                import numpy as np
+                np1 = np.array(image1).astype(np.float32)
+                np2 = np.array(imagem2).astype(np.float32)
+
+                if operacao == "soma":
+                    resultado_np = np.clip(np1 + escalar * np2, 0, 255)
+                elif operacao == "subtracao":
+                    resultado_np = np.clip(np1 - escalar * np2, 0, 255)
+                elif operacao == "multiplicacao":
+                    resultado_np = np.clip(np1 * escalar * np2, 0, 255)
+                else:
+                    sg.popup_error("Selecione uma operação válida.")
+                    continue
+
+                resultado_img = Image.fromarray(resultado_np.astype(np.uint8))
+                resultado_img.thumbnail((400, 400))
+                img_bytes = io.BytesIO()
+                resultado_img.save(img_bytes, format="PNG")
+                window["resultado_imagem"].update(data=img_bytes.getvalue())
+
+            except Exception as e:
+                sg.popup_error(f"Erro ao processar imagens: {e}")
+
+
 
         if filtro_selecionado == "Histograma":
             # Verificar se a imagem já está em escala de cinza

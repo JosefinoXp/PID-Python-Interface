@@ -374,8 +374,61 @@ def transformacao_logaritmica():
     pass
 
 # 11
-def operacoes_aritmeticas():
-    pass
+def operacoes_aritmeticas(imagem1, operacao, imagem2=None, escalar=None):
+    """
+    Aplica operações aritméticas entre imagens ou com valor escalar.
+    
+    Permite realizar soma, subtração entre duas imagens de mesmo tamanho,
+    ou multiplicação por escalar em uma única imagem. Realiza clipping para manter
+    os valores de pixels no intervalo [0, 255].
+
+    Parâmetros:
+    -----------
+    imagem1 : PIL.Image
+        Imagem base em escala de cinza.
+    operacao : str
+        Tipo de operação: "soma", "subtracao", ou "multiplicacao".
+    imagem2 : PIL.Image, opcional
+        Segunda imagem, obrigatória para soma e subtração.
+    escalar : float, opcional
+        Valor escalar para multiplicação.
+
+    Retorna:
+    --------
+    PIL.Image
+        Imagem resultante da operação aritmética com valores entre 0 e 255.
+    """
+    imagem1 = imagem1.convert("L")
+    arr1 = np.array(imagem1, dtype=np.float32)
+
+    if operacao == "soma":
+        if imagem2 is None:
+            raise ValueError("É necessário fornecer uma segunda imagem para a soma.")
+        imagem2 = imagem2.convert("L")
+        arr2 = np.array(imagem2, dtype=np.float32)
+        resultado = arr1 + arr2
+
+    elif operacao == "subtracao":
+        if imagem2 is None:
+            raise ValueError("É necessário fornecer uma segunda imagem para a subtração.")
+        imagem2 = imagem2.convert("L")
+        arr2 = np.array(imagem2, dtype=np.float32)
+        resultado = arr1 - arr2
+
+    elif operacao == "multiplicacao":
+        if escalar is None:
+            raise ValueError("É necessário fornecer um valor escalar para a multiplicação.")
+        resultado = arr1 * escalar
+
+    else:
+        raise ValueError("Operação inválida. Use: 'soma', 'subtracao' ou 'multiplicacao'.")
+
+    # Clipping para [0, 255]
+    resultado = np.clip(resultado, 0, 255).astype(np.uint8)
+
+    # Converte de volta para imagem
+    imagem_resultante = Image.fromarray(resultado, mode="L")
+    return imagem_resultante
 
 # 12
 def filtro_ruidos():
