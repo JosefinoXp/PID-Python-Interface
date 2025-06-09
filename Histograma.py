@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 #pip install matplotlib
 import numpy as np
 import cv2
+import threading
 
 from Filtros import *
 
@@ -39,6 +40,28 @@ def gerar_histograma(imagem_cinza):
     plt.xlim([0,255])
     plt.grid(True, alpha=0.3)
     plt.show()
+
+# def gerar_histograma(imagem_cinza):
+#     import matplotlib.pyplot as plt
+#     import numpy as np
+
+#     img_array = np.array(imagem_cinza)
+#     histograma, bins = np.histogram(img_array.flatten(), bins=256, range=[0,256])
+    
+#     def plot():
+#         plt.figure(figsize=(10,6))
+#         plt.title('Histograma da Imagem em Escala de Cinza', fontsize=14)
+#         plt.xlabel('Intensidade de Cinza', fontsize=12)
+#         plt.ylabel('Número de Pixels', fontsize=12)
+#         plt.bar(bins[:-1], histograma, width=1, color='black', alpha=0.7)
+#         plt.xlim([0,255])
+#         plt.grid(True, alpha=0.3)
+#         plt.show()
+
+#     # Rodar o plot em thread separada para não travar interface
+#     thread_plot = threading.Thread(target=plot)
+#     thread_plot.start()
+
 
 
 #

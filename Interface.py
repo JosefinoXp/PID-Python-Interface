@@ -38,8 +38,13 @@ filtros_disponiveis = [
 # Define quais parâmetros cada filtro precisa
 filtros_parametros = {
     "Limiriazação": ["limiar"],
+    "Passa-Alta Básico": ["kernel_pa_basico"],
+    "Passa-Alta Alto Reforço": ["kernel_pa_basico", "fator_k"],
     "Passa-Baixa Média": ["kernel"],
     "Passa-Baixa Mediana": ["kernel"],
+    "Sobel": ["direcao", "pos_processamento"],
+    "Transformação Logarítmica": [],
+    "Ruídos": ["taxa_ruido"],
     "Operações Aritméticas": ["operacao", "segunda_imagem", "escalar"]
 }
 
@@ -63,7 +68,26 @@ layout_parametros = [
 
     [sg.Button("Carregar Segunda Imagem", key="-CARREGAR_SEGUNDA-", visible=False)],
 
-    [sg.Image(key="segunda_imagem", visible=False)]
+    [sg.Image(key="segunda_imagem", visible=False)],
+
+    [sg.Text("Tipo de Kernel:", font=("Helvetica", 10), visible=False, key="-TEXT_KERNEL_PA-")],
+    [sg.Radio("Laplaciano 4-vizinhos", "KERNEL_PA", default=True, key="-KERNEL_PA_4-", visible=False)],
+    [sg.Radio("Laplaciano 8-vizinhos", "KERNEL_PA", key="-KERNEL_PA_8-", visible=False)],
+
+    [sg.Text("Fator de Reforço (k):", font=("Helvetica", 10), visible=False, key="-TEXT_FATOR_K-"),
+     sg.InputText("1.0", size=(5, 1), key="-VALOR_FATOR_K-", visible=False)],
+
+    [sg.Text("Direção do Gradiente:", font=("Helvetica", 10), visible=False, key="-TEXT_DIRECAO-")],
+    [sg.Radio("Ambos (Magnitude)", "DIRECAO", default=True, key="-DIR_AMBOS-", visible=False)],
+    [sg.Radio("Horizontal (Gx)", "DIRECAO", key="-DIR_GX-", visible=False)],
+    [sg.Radio("Vertical (Gy)", "DIRECAO", key="-DIR_GY-", visible=False)],
+
+    [sg.Text("Pós-processamento:", font=("Helvetica", 10), visible=False, key="-TEXT_POS-", pad=((0,0), (10,0)))],
+    [sg.Radio("Clipping", "POS", default=True, key="-POS_CLIP-", visible=False)],
+    [sg.Radio("Normalização", "POS", key="-POS_NORM-", visible=False)],
+
+    [sg.Text("Taxa de Ruído (0.0 a 1.0):", font=("Helvetica", 10), visible=False, key="-TEXT_TAXA_RUIDO-")],
+    [sg.InputText("0.05", size=(5, 1), key="-VALOR_TAXA_RUIDO-", visible=False)],
 ]
 
 # Layout dos parâmetros dinâmicos dentro de uma coluna
@@ -73,21 +97,9 @@ parametros_coluna = sg.Column(
     vertical_alignment='top',
     expand_x=True,
     expand_y=True,
-    scrollable=False
+    scrollable=False,
+    size=(300, 1000)
 )
-
-# coluna_imagens = sg.Column(
-#     [
-#         [sg.Text("IMAGEM ORIGINAL", font=("Helvetica", 12))],
-#         [sg.Image(key="imagem")],
-#         [sg.Button("CONVERTER", key="converter")],
-#         [sg.Text("IMAGEM CONVERTIDA", font=("Helvetica", 12))],
-#         [sg.Image(key="resultado_imagem")],
-#     ],
-#     size=(450, 600),          # altura fixa para limitar a área
-#     vertical_scroll_only=True,
-#     scrollable=False
-# )
 
 coluna_imagens = sg.Column(
     [
@@ -120,42 +132,6 @@ coluna_imagens = sg.Column(
     vertical_alignment='top'
 )
 
-
-# # Layout com os elementos organizados em uma coluna
-# layout = [
-#     [   # Primeira linha do layout principal
-#         # Coluna esquerda (filtros)
-#         # Layout principal com coluna de filtros + parâmetros dinâmicos
-#     sg.Column([
-#             [sg.Text("Filtros Disponíveis:", font=("Helvetica", 12))],
-#             [sg.Listbox(
-#                 values=filtros_disponiveis,
-#                 size=(28, 13),
-#                 key="-LISTA_FILTROS-",
-#                 select_mode=sg.LISTBOX_SELECT_MODE_SINGLE,
-#                 enable_events=True,
-#                 font=("Helvetica", 10),
-#                 background_color="white"
-#             )],
-#             [sg.Text("Filtro Selecionado:", font=("Helvetica", 10))],
-#             [sg.Text("Nenhum", key="-FILTRO_ATUAL-", font=("Helvetica", 10), text_color="blue")],
-#             [parametros_coluna]  # ← Aqui entra a nova coluna de parâmetros
-#         ], element_justification='left', vertical_alignment='top'),
-
-#         # Coluna direita (imagens e botões)
-#         coluna_imagens,
-#     ],
-    
-#     # Segunda linha do layout principal (controles de arquivo)
-#     [
-#         sg.Text("Imagem"),
-#         sg.Input(size=(30,1),key="file_path"),
-#         sg.FileBrowse(), 
-#         sg.Button("Carregar Imagem")
-#     ],
-# ]
-
-# Agrupa todos os elementos em uma coluna scrollável
 conteudo_completo = [
     [
         # Coluna da esquerda: lista de filtros e parâmetros
@@ -190,14 +166,18 @@ layout = [
     )]
 ]
 
-
 def atualizar_parametros_visiveis(filtro):
     # Oculta todos
     for key in ["-TEXT_LIMIAR-", "-VALOR_LIMIAR-",
                 "-TEXT_KERNEL-", "-VALOR_KERNEL-",
                 "-TEXT_OPERACAO-", "-OPERACAO_ARITMETICA-",
                 "-TEXT_SEGUNDA_IMAGEM-", "-SEGUNDA_IMAGEM-", "-BROWSE_SEGUNDA_IMAGEM-",
-                "-TEXT_ESCALAR-", "-VALOR_ESCALAR-", "-CARREGAR_SEGUNDA-", "segunda_imagem"]:
+                "-TEXT_ESCALAR-", "-VALOR_ESCALAR-", "-CARREGAR_SEGUNDA-", "segunda_imagem",
+                "-TEXT_KERNEL_PA-", "-KERNEL_PA_4-", "-KERNEL_PA_8-",
+                "-TEXT_FATOR_K-", "-VALOR_FATOR_K-",
+                "-TEXT_DIRECAO-", "-DIR_AMBOS-", "-DIR_GX-", "-DIR_GY-",
+                "-TEXT_POS-", "-POS_CLIP-", "-POS_NORM-",
+                "-TEXT_TAXA_RUIDO-", "-VALOR_TAXA_RUIDO-"]:
         window[key].update(visible=False)
 
     parametros = filtros_parametros.get(filtro, [])
@@ -219,6 +199,22 @@ def atualizar_parametros_visiveis(filtro):
     if "escalar" in parametros:
         window["-TEXT_ESCALAR-"].update(visible=True)
         window["-VALOR_ESCALAR-"].update(visible=True)
+    if "kernel_pa_basico" in parametros:
+        window["-TEXT_KERNEL_PA-"].update(visible=True)
+        window["-KERNEL_PA_4-"].update(visible=True)
+        window["-KERNEL_PA_8-"].update(visible=True)
+    if "fator_k" in parametros:
+        window["-TEXT_FATOR_K-"].update(visible=True)
+        window["-VALOR_FATOR_K-"].update(visible=True)
+    if "direcao" in parametros:
+        for key in ["-TEXT_DIRECAO-", "-DIR_AMBOS-", "-DIR_GX-", "-DIR_GY-"]:
+            window[key].update(visible=True)
+    if "pos_processamento" in parametros:
+        for key in ["-TEXT_POS-", "-POS_CLIP-", "-POS_NORM-"]:
+            window[key].update(visible=True)
+    if "taxa_ruido" in parametros:
+        window["-TEXT_TAXA_RUIDO-"].update(visible=True)
+        window["-VALOR_TAXA_RUIDO-"].update(visible=True)
 
 
 # Janela
@@ -232,8 +228,6 @@ window = sg.Window(
     use_default_focus=False
 )
 window.maximize()
-
-
 
 #Declaração de variavel
 filtro_selecionado = None
@@ -311,6 +305,50 @@ while True:
             print(image_bytes.getvalue())
             window["resultado_imagem"].update(data=image_bytes.getvalue())
 
+        if filtro_selecionado == "Passa-Alta Básico":
+            if values["-KERNEL_PA_4-"]:
+                tipo_kernel_escolhido = 'laplaciano_4'
+            else:
+                tipo_kernel_escolhido = 'laplaciano_8'
+            
+            # Aplica o filtro
+            imagem_convertida = passa_alta_basico(image, tipo_kernel=tipo_kernel_escolhido)
+
+            # Redimensiona para caber na interface
+            imagem_convertida.thumbnail((400, 400))
+
+            # Converte para exibição
+            buf = io.BytesIO()
+            imagem_convertida.save(buf, format="PNG")
+            window["resultado_imagem"].update(data=buf.getvalue())
+
+        if filtro_selecionado == "Passa-Alta Alto Reforço":
+            try:
+                fator_k_usuario = float(values["-VALOR_FATOR_K-"])
+            except ValueError:
+                sg.popup_error("O Fator de Reforço (k) deve ser um número (ex: 1.0, 1.5).")
+                continue
+
+            if values["-KERNEL_PA_4-"]:
+                tipo_kernel_escolhido = 'laplaciano_4'
+            else:
+                tipo_kernel_escolhido = 'laplaciano_8'
+
+            # Aplica o filtro
+            imagem_convertida = passa_alta_alto_reforco(
+                image, 
+                fator_k=fator_k_usuario, 
+                tipo_kernel_base=tipo_kernel_escolhido
+            )
+
+            # Redimensiona para caber na interface
+            imagem_convertida.thumbnail((400, 400))
+
+            # Converte para exibição
+            buf = io.BytesIO()
+            imagem_convertida.save(buf, format="PNG")
+            window["resultado_imagem"].update(data=buf.getvalue())
+
         if filtro_selecionado == "Passa-Baixa Média":
             try:
                 kernel_usuario = int(values["-VALOR_KERNEL-"])
@@ -362,6 +400,46 @@ while True:
             imagem_convertida.save(image_bytes, format="PNG")
             window["resultado_imagem"].update(data=image_bytes.getvalue())
 
+        if filtro_selecionado == "Sobel":
+            if values["-DIR_GX-"]:
+                direcao_escolhida = 'horizontal'
+            elif values["-DIR_GY-"]:
+                direcao_escolhida = 'vertical'
+            else:
+                direcao_escolhida = 'ambos'
+
+            if values["-POS_NORM-"]:
+                pos_proc_escolhido = 'normalizacao'
+            else:
+                pos_proc_escolhido = 'clipping'
+
+            # Aplica o filtro
+            imagem_convertida = filtro_sobel(
+                image, 
+                direcao=direcao_escolhida, 
+                pos_processamento=pos_proc_escolhido
+            )
+
+            # Redimensiona para caber na interface
+            imagem_convertida.thumbnail((400, 400))
+
+            # Converte para exibição
+            buf = io.BytesIO()
+            imagem_convertida.save(buf, format="PNG")
+            window["resultado_imagem"].update(data=buf.getvalue())
+
+        if filtro_selecionado == "Transformação Logarítmica":
+            # Aplica o filtro
+            imagem_convertida = transformacao_logaritmica(image)
+
+            # Redimensiona para caber na interface
+            imagem_convertida.thumbnail((400, 400))
+
+            # Converte para exibição
+            buf = io.BytesIO()
+            imagem_convertida.save(buf, format="PNG")
+            window["resultado_imagem"].update(data=buf.getvalue())
+
         if filtro_selecionado == "Operações Aritméticas":
             caminho_img2 = values["-SEGUNDA_IMAGEM-"]
             operacao = values["-OPERACAO_ARITMETICA-"]
@@ -412,7 +490,27 @@ while True:
             except Exception as e:
                 sg.popup_error(f"Erro ao processar imagens: {e}")
 
+        if filtro_selecionado == "Ruídos": 
+            try:
+                taxa_ruido_usuario = float(values["-VALOR_TAXA_RUIDO-"])
+                if not (0.0 <= taxa_ruido_usuario <= 1.0):
+                    sg.popup_error("A Taxa de Ruído deve ser um número entre 0.0 e 1.0.")
+                    continue
+                
+                # Aplica o ruído
+                imagem_convertida = filtro_ruidos(image, taxa_ruido=taxa_ruido_usuario)
 
+                # Redimensiona para caber na interface
+                imagem_convertida.thumbnail((400, 400))
+
+                # Converte para exibição
+                buf = io.BytesIO()
+                imagem_convertida.save(buf, format="PNG")
+                window["resultado_imagem"].update(data=buf.getvalue())
+
+            except ValueError:
+                sg.popup_error("A Taxa de Ruído deve ser um número válido (ex: 0.05).")
+                continue
 
         if filtro_selecionado == "Histograma":
             # Verificar se a imagem já está em escala de cinza
