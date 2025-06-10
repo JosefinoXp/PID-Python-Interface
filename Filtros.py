@@ -684,60 +684,32 @@ def operacoes_aritmeticas(imagem1, operacao, imagem2=None, escalar=None):
 
 # 12
 def filtro_ruidos(imagem, taxa_ruido=0.05):
-    """
-    Adiciona ruído "Sal e Pimenta" a uma imagem.
-
-    Este tipo de ruído consiste em alterar pixels aleatórios para as cores
-    preta (pimenta) ou branca (sal). A função funciona tanto para imagens
-    em escala de cinza quanto para imagens coloridas (RGB).
-
-    Parâmetros:
-    -----------
-    imagem : PIL.Image
-        A imagem de entrada que receberá o ruído.
-
-    taxa_ruido : float, opcional
-        A proporção de pixels que serão afetados pelo ruído.
-        Deve ser um valor entre 0.0 e 1.0. Por exemplo, 0.05 significa
-        que 5% do total de pixels serão convertidos em ruído.
-        O padrão é 0.05.
-
-    Retorna:
-    --------
-    PIL.Image
-        Uma nova imagem com o ruído "Sal e Pimenta" aplicado.
-    """
-    # 1. Cria uma cópia da imagem como um array NumPy para manipulação
     img_array = np.array(imagem).copy()
-    
-    # 2. Determina as dimensões e o modo da imagem (cinza ou RGB)
-    if img_array.ndim == 2: # Imagem em tons de cinza
-        altura, largura = img_array.shape
-        is_rgb = False
-    else: # Imagem colorida (RGB)
-        altura, largura, canais = img_array.shape
-        is_rgb = True
 
-    # 3. Calcula o número total de pixels a serem afetados
+    if img_array.ndim == 2:
+        altura, largura = img_array.shape
+        valor_salt = 255
+        valor_pepper = 0
+    elif img_array.ndim == 3:
+        altura, largura, canais = img_array.shape
+        valor_salt = [255] * canais
+        valor_pepper = [0] * canais
+    else:
+        raise ValueError("Formato de imagem não suportado.")
+
     num_pixels_ruido = int(taxa_ruido * altura * largura)
-    
-    # Metade será "sal" (branco) e a outra metade "pimenta" (preto)
+    if num_pixels_ruido <= 0:
+        return imagem.copy()
+
     num_salt = num_pixels_ruido // 2
     num_pepper = num_pixels_ruido - num_salt
 
-    # 4. Adiciona ruído "Sal" (pixels brancos)
-    # Sorteia coordenadas aleatórias para aplicar o ruído
-    coords_salt_x = np.random.randint(0, altura, num_salt)
-    coords_salt_y = np.random.randint(0, largura, num_salt)
-    valor_salt = 255 if not is_rgb else [255, 255, 255]
-    img_array[coords_salt_x, coords_salt_y] = valor_salt
+    coords_salt = (np.random.randint(0, altura, num_salt),
+                   np.random.randint(0, largura, num_salt))
+    coords_pepper = (np.random.randint(0, altura, num_pepper),
+                     np.random.randint(0, largura, num_pepper))
 
-    # 5. Adiciona ruído "Pimenta" (pixels pretos)
-    # Sorteia outras coordenadas aleatórias
-    coords_pepper_x = np.random.randint(0, altura, num_pepper)
-    coords_pepper_y = np.random.randint(0, largura, num_pepper)
-    valor_pepper = 0 if not is_rgb else [0, 0, 0]
-    img_array[coords_pepper_x, coords_pepper_y] = valor_pepper
+    img_array[coords_salt] = valor_salt
+    img_array[coords_pepper] = valor_pepper
 
-    # 6. Converte o array de volta para uma imagem PIL e retorna
     return Image.fromarray(img_array)
